@@ -11,7 +11,7 @@ module.exports = {
   // Analysis settings
   analysis: {
     includeSystemDbs: false,
-    minOpsThreshold: 10,
+    minOpsThreshold: 0,
     timeoutMs: 300000, // 5 minutes
     maxConcurrentConnections: 5
   },
@@ -26,7 +26,7 @@ module.exports = {
 
   // AliCloud settings
   alicloud: {
-    defaultRegion: 'cn-hangzhou',
+    defaultRegion: 'ap-southeast-1',
     requestTimeout: 30000,
     maxRetries: 3,
     retryDelay: 1000
