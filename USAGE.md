@@ -41,35 +41,32 @@ MONGODB_PASSWORD=your_mongodb_password
 
 ## Usage Examples
 
-### Basic Analysis
+### Basic Analysis (Instance ID Required)
 ```bash
-# Analyze all MongoDB instances in the region
-npm start
+# Analyze specific MongoDB instance (required)
+npm start -- --instance-id dds-xxxxxxxxx
 
 # Or with node directly
-node index.js
+node index.js --instance-id dds-xxxxxxxxx
 ```
 
 ### Advanced Options
 ```bash
-# Analyze specific instance
-node index.js --instance-id dds-xxxxxxxxx
-
-# Different output formats
-node index.js --output json
-node index.js --output csv
+# Different output formats (instance-id required)
+node index.js --instance-id dds-xxxxxxxxx --output json
+node index.js --instance-id dds-xxxxxxxxx --output csv
 
 # Include system databases
-node index.js --include-system-dbs
+node index.js --instance-id dds-xxxxxxxxx --include-system-dbs
 
 # Custom unused index threshold (default: 10 operations)
-node index.js --min-ops 100
+node index.js --instance-id dds-xxxxxxxxx --min-ops 100
 
 # Specific region
-node index.js --region cn-shanghai
+node index.js --instance-id dds-xxxxxxxxx --region cn-shanghai
 
 # Combined options
-node index.js --region cn-hangzhou --output json --min-ops 50 --include-system-dbs
+node index.js --instance-id dds-xxxxxxxxx --region cn-hangzhou --output json --min-ops 50 --include-system-dbs
 ```
 
 ## Understanding the Output
@@ -290,12 +287,12 @@ node setup.js
 
 ### Common Commands
 ```bash
-# Quick start
-npm run setup && npm start
+# Quick start (you'll be prompted for instance ID if not provided)
+npm run setup
 
 # Analyze specific instance with detailed output
 node index.js --instance-id dds-xxx --output json --include-system-dbs
 
 # Focus on unused indexes
-node index.js --min-ops 1 --output table
+node index.js --instance-id dds-xxx --min-ops 1 --output table
 ```

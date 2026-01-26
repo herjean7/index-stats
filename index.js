@@ -4,6 +4,7 @@ require('dotenv').config();
 const { Command } = require('commander');
 const chalk = require('chalk');
 const ora = require('ora');
+const config = require('./config/default');
 const AliCloudClient = require('./lib/alicloud-client');
 const MongoDBAnalyzer = require('./lib/mongodb-analyzer');
 const ReportGenerator = require('./lib/report-generator');
@@ -15,17 +16,18 @@ program
   .description('MongoDB index statistics tool for AliCloud instances')
   .version('1.0.0')
   .option('-r, --region <region>', 'AliCloud region', process.env.ALICLOUD_REGION || 'cn-hangzhou')
-  .option('-i, --instance-id <id>', 'Specific MongoDB instance ID to analyze')
+  .requiredOption('-i, --instance-id <id>', 'MongoDB instance ID to analyze (required)')
   .option('-o, --output <format>', 'Output format (table|json|csv)', 'table')
   .option('--include-system-dbs', 'Include system databases in analysis', false)
   .option('--min-ops <number>', 'Minimum operations threshold for unused index detection', '10')
+  .option('--unused-days <number>', 'Days threshold for considering an index unused', config.analysis.unusedDaysThreshold.toString())
   .parse();
 
 const options = program.opts();
 
 async function main() {
   console.log(chalk.blue.bold('🔍 MongoDB Index Stats Tool'));
-  console.log(chalk.gray('Analyzing MongoDB instances across all cluster nodes...\n'));
+  console.log(chalk.gray(`Analyzing MongoDB instance: ${options.instanceId}\n`));
 
   // Validate environment variables
   const requiredEnvVars = ['ALICLOUD_ACCESS_KEY_ID', 'ALICLOUD_ACCESS_KEY_SECRET'];
@@ -48,76 +50,52 @@ async function main() {
       region: options.region
     });
 
-    // Get MongoDB instances
-    spinner.text = 'Fetching MongoDB instances...';
-    const instances = await alicloudClient.getDBInstances(options.instanceId);
+    // Get specific MongoDB instance details directly
+    spinner.text = 'Fetching MongoDB instance details...';
     
-    if (instances.length === 0) {
-      spinner.fail('No MongoDB instances found');
-      return;
-    }
-
-    spinner.succeed(`Found ${instances.length} MongoDB instance(s)`);
+    const instanceDetails = await alicloudClient.getDBInstanceAttribute(options.instanceId);
+    
+    spinner.succeed(`Found MongoDB instance: ${instanceDetails.instanceId}`);
     console.log();
 
-    // Analyze each instance
-    const allResults = [];
+    console.log(chalk.cyan(`📊 Analyzing instance: ${instanceDetails.instanceId} (${instanceDetails.description})`));
     
-    //HARDCODE
-    let i = 0;
-    for (const instance of instances) {
-      if (i > 1) { break; };
-      console.log(chalk.cyan(`📊 Analyzing instance: ${instance.DBInstanceId} (${instance.DBInstanceDescription})`));
-      
-      spinner = ora('Getting instance connection details...').start();
-      
-      // Get detailed instance information
-      //HARDCODE FOR TESTING
-      const instanceDetails = await alicloudClient.getDBInstanceAttribute("dds-gs532f7312d8b254");
+    spinner = ora('Connecting to MongoDB nodes...').start();
+    
+    // Initialize MongoDB analyzer
+    const mongoAnalyzer = new MongoDBAnalyzer({
+      username: process.env.MONGODB_USERNAME,
+      password: process.env.MONGODB_PASSWORD,
+      authSource: process.env.MONGODB_AUTH_SOURCE || config.mongodb.authSource,
+      connectionTimeout: parseInt(process.env.CONNECTION_TIMEOUT) || config.mongodb.connectionTimeout,
+      includeSystemDbs: options.includeSystemDbs || config.analysis.includeSystemDbs,
+      minOpsThreshold: parseInt(options.minOps) || config.analysis.minOpsThreshold,
+      unusedDaysThreshold: parseInt(options.unusedDays) || config.analysis.unusedDaysThreshold
+    });
 
-      spinner.text = 'Connecting to MongoDB nodes...';
+    try {
+      // Analyze the instance (all nodes)
+      spinner.text = 'Analyzing index statistics across all nodes...';
+      const analysisResult = await mongoAnalyzer.analyzeInstance(instanceDetails);
       
-      // Initialize MongoDB analyzer
-      const mongoAnalyzer = new MongoDBAnalyzer({
-        username: process.env.MONGODB_USERNAME,
-        password: process.env.MONGODB_PASSWORD,
-        authSource: process.env.MONGODB_AUTH_SOURCE || 'admin',
-        connectionTimeout: parseInt(process.env.CONNECTION_TIMEOUT) || 30000,
-        includeSystemDbs: options.includeSystemDbs,
-        minOpsThreshold: parseInt(options.minOps)
-      });
-
-      try {
-        // Analyze the instance (all nodes)
-        spinner.text = 'Analyzing index statistics across all nodes...';
-        const analysisResult = await mongoAnalyzer.analyzeInstance(instanceDetails);
-        
-        analysisResult.instanceId = instance.DBInstanceId;
-        analysisResult.instanceDescription = instance.DBInstanceDescription;
-        allResults.push(analysisResult);
-        
-        spinner.succeed(`Completed analysis for ${instance.DBInstanceId}`);
-        
-      } catch (error) {
-        spinner.fail(`Failed to analyze ${instance.DBInstanceId}: ${error.message}`);
-        console.error(chalk.red(`Error details: ${error.stack}`));
-      }
+      analysisResult.instanceId = instanceDetails.instanceId;
+      analysisResult.instanceDescription = instanceDetails.description;
+      
+      spinner.succeed(`Completed analysis for ${instanceDetails.instanceId}`);
       
       console.log();
-
-      i++;
-    }
-
-    // Generate and display report
-    if (allResults.length > 0) {
-      console.log(chalk.green.bold('📋 Generating consolidated report...\n'));
+      
+      // Generate and display report
+      console.log(chalk.green.bold('📋 Generating report...\n'));
       
       const reportGenerator = new ReportGenerator();
-      await reportGenerator.generateReport(allResults, options.output);
+      await reportGenerator.generateReport([analysisResult], options.output);
       
       console.log(chalk.green.bold('\n✅ Analysis completed successfully!'));
-    } else {
-      console.log(chalk.yellow('⚠️  No successful analyses to report'));
+      
+    } catch (error) {
+      spinner.fail(`Failed to analyze ${instanceDetails.instanceId}: ${error.message}`);
+      console.error(chalk.red(`Error details: ${error.stack}`));
     }
 
   } catch (error) {

@@ -4,35 +4,35 @@
  * Example usage script for MongoDB Index Stats Tool
  */
 
-const { main } = require('./index');
+// Only import for configuration validation
+const fs = require('fs');
+const path = require('path');
 
 async function runExamples() {
   console.log('🔍 MongoDB Index Stats Tool - Example Usage');
   console.log('=============================================\n');
 
-  console.log('Example 1: Basic usage (analyze all instances)');
-  console.log('Command: node index.js\n');
-
-  console.log('Example 2: Analyze specific instance');
+  console.log('Example 1: Basic usage (instance ID required)');
   console.log('Command: node index.js --instance-id dds-xxxxxxxxx\n');
 
-  console.log('Example 3: Generate JSON report');
-  console.log('Command: node index.js --output json\n');
+  console.log('Example 2: Generate JSON report');
+  console.log('Command: node index.js --instance-id dds-xxxxxxxxx --output json\n');
 
-  console.log('Example 4: Include system databases');
-  console.log('Command: node index.js --include-system-dbs\n');
+  console.log('Example 3: Include system databases');
+  console.log('Command: node index.js --instance-id dds-xxxxxxxxx --include-system-dbs\n');
 
-  console.log('Example 5: Custom unused index threshold');
-  console.log('Command: node index.js --min-ops 100\n');
+  console.log('Example 4: Custom unused index threshold');
+  console.log('Command: node index.js --instance-id dds-xxxxxxxxx --min-ops 100\n');
 
-  console.log('Example 6: Specific region');
-  console.log('Command: node index.js --region cn-shanghai\n');
+  console.log('Example 5: Specific region');
+  console.log('Command: node index.js --instance-id dds-xxxxxxxxx --region cn-shanghai\n');
 
-  console.log('Example 7: Combined options');
-  console.log('Command: node index.js --region cn-hangzhou --output csv --min-ops 50\n');
+  console.log('Example 6: Combined options');
+  console.log('Command: node index.js --instance-id dds-xxxxxxxxx --region cn-hangzhou --output csv --min-ops 50\n');
 
   // Check if environment is configured
-  if (!process.env.ALICLOUD_ACCESS_KEY_ID) {
+  const envPath = path.join(__dirname, '.env');
+  if (!fs.existsSync(envPath)) {
     console.log('⚠️  Environment not configured. Run setup first:');
     console.log('   node setup.js\n');
     return;
@@ -41,8 +41,10 @@ async function runExamples() {
   // Run a quick validation
   console.log('🧪 Testing configuration...');
   try {
-    // This would normally run the full analysis, but for demo purposes,
-    // we'll just validate the environment
+    // Load environment variables
+    require('dotenv').config();
+    
+    // Basic validation - just check if AliCloud client can be created
     const AliCloudClient = require('./lib/alicloud-client');
     
     const client = new AliCloudClient({
@@ -53,7 +55,7 @@ async function runExamples() {
 
     console.log('✅ Configuration appears valid');
     console.log('\nTo run the actual analysis, use:');
-    console.log('   npm start');
+    console.log('   node index.js --instance-id <your-mongodb-instance-id>');
     
   } catch (error) {
     console.error('❌ Configuration error:', error.message);

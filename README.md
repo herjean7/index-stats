@@ -1,6 +1,6 @@
 # MongoDB Index Stats Tool
 
-A comprehensive tool for analyzing MongoDB index statistics across all nodes in AliCloud clusters.
+A comprehensive tool for analyzing MongoDB index statistics across all nodes in a specific AliCloud MongoDB instance.
 
 ## Features
 
@@ -70,16 +70,16 @@ MONGODB_PASSWORD=your_mongodb_password
 
 ## Usage
 
-### Basic Usage
+### Basic Usage (Instance ID is required)
 ```bash
-node index.js
+node index.js --instance-id dds-xxxxxxxxx
 ```
 
 ### Advanced Options
 ```bash
 node index.js --region cn-hangzhou --instance-id dds-xxxxxxxxx
-node index.js --output json
-node index.js --include-system-dbs
+node index.js --instance-id dds-xxxxxxxxx --output json
+node index.js --instance-id dds-xxxxxxxxx --include-system-dbs
 ```
 
 ## Output

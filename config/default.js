@@ -11,7 +11,8 @@ module.exports = {
   // Analysis settings
   analysis: {
     includeSystemDbs: false,
-    minOpsThreshold: 0,
+    minOpsThreshold: 10,
+    unusedDaysThreshold: 7,
     timeoutMs: 300000, // 5 minutes
     maxConcurrentConnections: 5
   },

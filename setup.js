@@ -83,7 +83,7 @@ ANALYSIS_TIMEOUT=${analysisTimeout}
 
   console.log('\n🎉 Setup completed successfully!');
   console.log('\nYou can now run the tool with:');
-  console.log('  npm start');
+  console.log('  node index.js --instance-id <your-mongodb-instance-id>');
   console.log('\nFor help and options:');
   console.log('  node index.js --help');
 
