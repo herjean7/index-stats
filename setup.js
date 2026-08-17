@@ -33,10 +33,35 @@ async function setup() {
 
   console.log('Please provide your configuration details:\n');
 
-  // Collect AliCloud credentials
-  const accessKeyId = await question('AliCloud Access Key ID: ');
-  const accessKeySecret = await question('AliCloud Access Key Secret: ');
-  const region = await question('AliCloud Region (default: cn-hangzhou): ') || 'cn-hangzhou';
+  const providerRaw = await question('Provider (alicloud/atlas/self-managed) [alicloud]: ');
+  const provider = (providerRaw || 'alicloud').trim().toLowerCase();
+
+  let accessKeyId = '';
+  let accessKeySecret = '';
+  let region = 'cn-hangzhou';
+  let atlasUri = '';
+  let mongodbUri = '';
+  let mongodbHosts = '';
+  let mongodbTls = 'false';
+
+  if (provider === 'alicloud') {
+    accessKeyId = await question('AliCloud Access Key ID: ');
+    accessKeySecret = await question('AliCloud Access Key Secret: ');
+    region = await question('AliCloud Region (default: cn-hangzhou): ') || 'cn-hangzhou';
+  } else if (provider === 'atlas') {
+    atlasUri = await question('Atlas MongoDB URI (mongodb+srv://...): ');
+  } else if (provider === 'self-managed') {
+    mongodbUri = await question('Self-managed MongoDB URI (optional): ');
+    if (!mongodbUri) {
+      mongodbHosts = await question('Self-managed hosts (comma-separated host:port): ');
+      const tlsInput = await question('Enable TLS for static host mode? (y/N): ');
+      mongodbTls = tlsInput.toLowerCase() === 'y' ? 'true' : 'false';
+    }
+  } else {
+    console.log(`Unsupported provider: ${provider}`);
+    rl.close();
+    return;
+  }
 
   console.log();
 
@@ -52,10 +77,21 @@ async function setup() {
   const analysisTimeout = await question('Analysis Timeout in ms (default: 300000): ') || '300000';
 
   // Create .env file
-  const envContent = `# AliCloud Configuration
+  const envContent = `# Provider Selection
+CLOUD_PROVIDER=${provider}
+
+# AliCloud Configuration
 ALICLOUD_ACCESS_KEY_ID=${accessKeyId}
 ALICLOUD_ACCESS_KEY_SECRET=${accessKeySecret}
 ALICLOUD_REGION=${region}
+
+# Atlas Configuration
+ATLAS_CONNECTION_URI=${atlasUri}
+
+# Self-Managed Configuration
+MONGODB_CONNECTION_URI=${mongodbUri}
+MONGODB_HOSTS=${mongodbHosts}
+MONGODB_TLS=${mongodbTls}
 
 # MongoDB Configuration
 MONGODB_USERNAME=${mongoUsername}
@@ -83,7 +119,13 @@ ANALYSIS_TIMEOUT=${analysisTimeout}
 
   console.log('\n🎉 Setup completed successfully!');
   console.log('\nYou can now run the tool with:');
-  console.log('  node index.js --instance-id <your-mongodb-instance-id>');
+  if (provider === 'alicloud') {
+    console.log('  node index.js --provider alicloud --instance-id <your-mongodb-instance-id>');
+  } else if (provider === 'atlas') {
+    console.log('  node index.js --provider atlas --atlas-uri "mongodb+srv://..."');
+  } else {
+    console.log('  node index.js --provider self-managed --connection-uri "mongodb://..."');
+  }
   console.log('\nFor help and options:');
   console.log('  node index.js --help');
 

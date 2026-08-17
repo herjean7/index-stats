@@ -1,4 +1,9 @@
 module.exports = {
+  provider: {
+    default: 'alicloud',
+    supported: ['alicloud', 'atlas', 'self-managed']
+  },
+
   // MongoDB connection settings
   mongodb: {
     connectionTimeout: 30000,
@@ -31,6 +36,18 @@ module.exports = {
     requestTimeout: 30000,
     maxRetries: 3,
     retryDelay: 1000
+  },
+
+  // Atlas settings
+  atlas: {
+    requestTimeout: 30000,
+    tls: true
+  },
+
+  // Self-managed settings
+  selfManaged: {
+    defaultPort: 27017,
+    tls: false
   },
 
   // Logging settings

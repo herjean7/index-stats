@@ -12,23 +12,23 @@ async function runExamples() {
   console.log('🔍 MongoDB Index Stats Tool - Example Usage');
   console.log('=============================================\n');
 
-  console.log('Example 1: Basic usage (instance ID required)');
-  console.log('Command: node index.js --instance-id dds-xxxxxxxxx\n');
+  console.log('Example 1: AliCloud basic usage');
+  console.log('Command: node index.js --provider alicloud --instance-id dds-xxxxxxxxx\n');
 
-  console.log('Example 2: Generate JSON report');
-  console.log('Command: node index.js --instance-id dds-xxxxxxxxx --output json\n');
+  console.log('Example 2: Atlas usage via URI');
+  console.log('Command: node index.js --provider atlas --atlas-uri "mongodb+srv://user:pass@cluster.mongodb.net/admin?tls=true"\n');
 
-  console.log('Example 3: Include system databases');
-  console.log('Command: node index.js --instance-id dds-xxxxxxxxx --include-system-dbs\n');
+  console.log('Example 3: Self-managed usage via URI');
+  console.log('Command: node index.js --provider self-managed --connection-uri "mongodb://user:pass@host1:27017,host2:27017/admin?replicaSet=rs0"\n');
 
-  console.log('Example 4: Custom unused index threshold');
-  console.log('Command: node index.js --instance-id dds-xxxxxxxxx --min-ops 100\n');
+  console.log('Example 4: Self-managed static host mode');
+  console.log('Command: node index.js --provider self-managed --hosts host1:27017,host2:27017 --tls\n');
 
-  console.log('Example 5: Specific region');
-  console.log('Command: node index.js --instance-id dds-xxxxxxxxx --region cn-shanghai\n');
+  console.log('Example 5: Generate JSON report');
+  console.log('Command: node index.js --provider alicloud --instance-id dds-xxxxxxxxx --output json\n');
 
   console.log('Example 6: Combined options');
-  console.log('Command: node index.js --instance-id dds-xxxxxxxxx --region cn-hangzhou --output csv --min-ops 50\n');
+  console.log('Command: node index.js --provider atlas --atlas-uri "mongodb+srv://..." --output csv --min-ops 50\n');
 
   // Check if environment is configured
   const envPath = path.join(__dirname, '.env');
@@ -44,18 +44,12 @@ async function runExamples() {
     // Load environment variables
     require('dotenv').config();
     
-    // Basic validation - just check if AliCloud client can be created
-    const AliCloudClient = require('./lib/alicloud-client');
-    
-    const client = new AliCloudClient({
-      accessKeyId: process.env.ALICLOUD_ACCESS_KEY_ID,
-      accessKeySecret: process.env.ALICLOUD_ACCESS_KEY_SECRET,
-      region: process.env.ALICLOUD_REGION || 'cn-hangzhou'
-    });
-
-    console.log('✅ Configuration appears valid');
-    console.log('\nTo run the actual analysis, use:');
-    console.log('   node index.js --instance-id <your-mongodb-instance-id>');
+    const provider = (process.env.CLOUD_PROVIDER || 'alicloud').toLowerCase();
+    console.log(`✅ Configuration loaded (provider: ${provider})`);
+    console.log('\nTo run the actual analysis, use one of:');
+    console.log('   node index.js --provider alicloud --instance-id <instance-id>');
+    console.log('   node index.js --provider atlas --atlas-uri "mongodb+srv://..."');
+    console.log('   node index.js --provider self-managed --connection-uri "mongodb://..."');
     
   } catch (error) {
     console.error('❌ Configuration error:', error.message);

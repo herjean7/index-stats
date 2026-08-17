@@ -5,7 +5,7 @@ const { Command } = require('commander');
 const chalk = require('chalk');
 const ora = require('ora');
 const config = require('./config/default');
-const AliCloudClient = require('./lib/alicloud-client');
+const { createProvider } = require('./lib/providers/provider-factory');
 const MongoDBAnalyzer = require('./lib/mongodb-analyzer');
 const ReportGenerator = require('./lib/report-generator');
 
@@ -13,10 +13,16 @@ const program = new Command();
 
 program
   .name('mongodb-index-stats')
-  .description('MongoDB index statistics tool for AliCloud instances')
+  .description('MongoDB index statistics tool for AliCloud, Atlas, and self-managed clusters')
   .version('1.0.0')
+  .option('-p, --provider <provider>', 'Provider (alicloud|atlas|self-managed)')
   .option('-r, --region <region>', 'AliCloud region', process.env.ALICLOUD_REGION || 'cn-hangzhou')
-  .requiredOption('-i, --instance-id <id>', 'MongoDB instance ID to analyze (required)')
+  .option('-i, --instance-id <id>', 'AliCloud MongoDB instance ID to analyze')
+  .option('--atlas-uri <uri>', 'Atlas MongoDB URI used for topology discovery')
+  .option('--connection-uri <uri>', 'MongoDB URI for self-managed discovery')
+  .option('--hosts <hosts>', 'Comma-separated host:port list for self-managed static endpoint mode')
+  .option('--cluster-name <name>', 'Optional logical cluster name for reporting')
+  .option('--tls', 'Enable TLS in self-managed static endpoint mode')
   .option('-o, --output <format>', 'Output format (table|json|csv)', 'table')
   .option('--include-system-dbs', 'Include system databases in analysis', false)
   .option('--min-ops <number>', 'Minimum operations threshold for unused index detection', '10')
@@ -27,38 +33,22 @@ const options = program.opts();
 
 async function main() {
   console.log(chalk.blue.bold('🔍 MongoDB Index Stats Tool'));
-  console.log(chalk.gray(`Analyzing MongoDB instance: ${options.instanceId}\n`));
-
-  // Validate environment variables
-  const requiredEnvVars = ['ALICLOUD_ACCESS_KEY_ID', 'ALICLOUD_ACCESS_KEY_SECRET'];
-  const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
-  
-  if (missingVars.length > 0) {
-    console.error(chalk.red('❌ Missing required environment variables:'));
-    missingVars.forEach(varName => console.error(chalk.red(`   - ${varName}`)));
-    console.error(chalk.yellow('Please configure your .env file. See .env.example for reference.'));
-    process.exit(1);
-  }
-
-  let spinner = ora('Initializing AliCloud client...').start();
+  let spinner = ora('Resolving cluster target...').start();
 
   try {
-    // Initialize AliCloud client
-    const alicloudClient = new AliCloudClient({
-      accessKeyId: process.env.ALICLOUD_ACCESS_KEY_ID,
-      accessKeySecret: process.env.ALICLOUD_ACCESS_KEY_SECRET,
-      region: options.region
+    const { providerName, provider } = createProvider({
+      options,
+      env: process.env,
+      config
     });
 
-    // Get specific MongoDB instance details directly
-    spinner.text = 'Fetching MongoDB instance details...';
-    
-    const instanceDetails = await alicloudClient.getDBInstanceAttribute(options.instanceId);
-    
-    spinner.succeed(`Found MongoDB instance: ${instanceDetails.instanceId}`);
+    spinner.text = `Initializing ${providerName} provider...`;
+    const instanceDetails = await provider.resolveTarget();
+
+    spinner.succeed(`Resolved target: ${instanceDetails.instanceId}`);
     console.log();
 
-    console.log(chalk.cyan(`📊 Analyzing instance: ${instanceDetails.instanceId} (${instanceDetails.description})`));
+    console.log(chalk.cyan(`📊 Analyzing target: ${instanceDetails.instanceId} (${instanceDetails.description})`));
     
     spinner = ora('Connecting to MongoDB nodes...').start();
     

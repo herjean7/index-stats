@@ -1,111 +1,114 @@
 # MongoDB Index Stats Tool
 
-A comprehensive tool for analyzing MongoDB index statistics across all nodes in a specific AliCloud MongoDB instance.
+A tool for analyzing MongoDB index statistics across all nodes in a cluster.
+
+## Supported Providers
+
+- AliCloud MongoDB
+- MongoDB Atlas
+- Self-managed MongoDB
 
 ## Features
 
-- 📊 Collects index statistics from all MongoDB nodes (primary and secondary)
-- 🔍 Identifies TTL indexes and their configurations
-- ⏰ Reports when each MongoDB node was last restarted
-- 📋 Consolidates results into easy-to-read tables
-- 🚨 Highlights unused and redundant indexes
-- 🌐 Works with AliCloud MongoDB instances
-
-## Prerequisites
-
-Before using this tool, you need to create a custom database role and assign it to your MongoDB user to ensure proper permissions for listing collections and indexes.
-
-### Database Role Setup
-
-Connect to your MongoDB instance and run the following commands:
-
-```javascript
-use admin
-db.createRole({
-  role: "globalListCollections",
-  privileges: [
-    {
-      resource: { db: "", collection: "" }, 
-      actions: ["listCollections", "listIndexes"]
-    }
-  ],
-  roles: []
-})
-db.grantRolesToUser("indexLister", [
-  { role: "globalListCollections", db: "admin" }
-])
-```
-
-**Note**: Replace `"indexLister"` with your actual MongoDB username that you'll use for connecting to the database.
+- Collects index usage stats across multiple nodes
+- Detects TTL indexes and flags TTL-specific caveats
+- Captures node restart timing to avoid false unused-index signals
+- Produces table, JSON, and CSV reports
+- Highlights potentially unused and inconsistent index usage patterns
 
 ## Setup
 
 1. Install dependencies:
+
 ```bash
 npm install
 ```
 
-2. Configure your AliCloud credentials in `.env`:
+2. Run interactive setup:
+
 ```bash
-cp .env.example .env
-# Edit .env with your credentials
+npm run setup
 ```
 
-3. Run the tool:
+3. Run analysis with the provider mode you need.
+
+## Quick Start
+
+AliCloud:
+
 ```bash
-npm start
+node index.js --provider alicloud --instance-id dds-xxxxxxxxx --region cn-hangzhou
 ```
 
-## Configuration
+Atlas:
 
-Create a `.env` file with the following variables:
+```bash
+node index.js --provider atlas --atlas-uri "mongodb+srv://user:pass@cluster0.xxxxx.mongodb.net/admin?tls=true"
+```
+
+Self-managed with URI discovery:
+
+```bash
+node index.js --provider self-managed --connection-uri "mongodb://user:pass@host1:27017,host2:27017/admin?replicaSet=rs0"
+```
+
+Self-managed static endpoints:
+
+```bash
+node index.js --provider self-managed --hosts host1:27017,host2:27017 --tls
+```
+
+## Common Options
+
+```bash
+--output table|json|csv
+--include-system-dbs
+--min-ops 10
+--unused-days 7
+```
+
+## Environment Variables
 
 ```env
-ALICLOUD_ACCESS_KEY_ID=your_access_key_id
-ALICLOUD_ACCESS_KEY_SECRET=your_access_key_secret
-ALICLOUD_REGION=your_region
-MONGODB_USERNAME=your_mongodb_username
-MONGODB_PASSWORD=your_mongodb_password
+# Provider selection
+CLOUD_PROVIDER=alicloud
+
+# AliCloud
+ALICLOUD_ACCESS_KEY_ID=
+ALICLOUD_ACCESS_KEY_SECRET=
+ALICLOUD_REGION=cn-hangzhou
+
+# Atlas
+ATLAS_CONNECTION_URI=
+
+# Self-managed
+MONGODB_CONNECTION_URI=
+MONGODB_HOSTS=
+MONGODB_TLS=false
+
+# MongoDB credentials (used when endpoint URIs do not embed auth)
+MONGODB_USERNAME=
+MONGODB_PASSWORD=
+MONGODB_AUTH_SOURCE=admin
+
+# Optional
+CONNECTION_TIMEOUT=30000
+ANALYSIS_TIMEOUT=300000
 ```
 
-## Usage
+## Minimum MongoDB Privileges
 
-### Basic Usage (Instance ID is required)
-```bash
-node index.js --instance-id dds-xxxxxxxxx
-```
+The analyzing user should have permissions to:
 
-### Advanced Options
-```bash
-node index.js --region cn-hangzhou --instance-id dds-xxxxxxxxx
-node index.js --instance-id dds-xxxxxxxxx --output json
-node index.js --instance-id dds-xxxxxxxxx --include-system-dbs
-```
+- list databases
+- list collections
+- list indexes
+- run index stats related commands
 
-## Output
+## Notes
 
-The tool generates comprehensive reports showing:
-
-- **Instance Information**: Connection details for each MongoDB node
-- **Index Statistics**: Usage statistics for each index across all nodes
-- **TTL Indexes**: Special highlighting of TTL indexes
-- **Node Status**: Last restart time and current status
-- **Recommendations**: Suggestions for unused or redundant indexes
-
-## Architecture
-
-```
-index.js (Main entry point)
-├── lib/
-│   ├── alicloud-client.js (AliCloud API interactions)
-│   ├── mongodb-analyzer.js (MongoDB connection and analysis)
-│   ├── index-stats-collector.js (Index statistics collection)
-│   ├── ttl-detector.js (TTL index detection)
-│   ├── report-generator.js (Output formatting)
-│   └── utils.js (Helper functions)
-└── config/
-    └── default.js (Default configuration)
-```
+- Atlas and self-managed URI modes perform topology discovery and then connect directly to each node for node-level stats.
+- Some locked-down environments may restrict shard/member discovery, resulting in partial node coverage.
 
 ## License
 
