@@ -58,6 +58,14 @@ Self-managed static endpoints:
 node index.js --provider self-managed --hosts host1:27017,host2:27017 --tls
 ```
 
+## Using a .env File
+
+If a `.env` file with the variables below already exists, connection flags can be omitted:
+
+```bash
+node index.js --provider atlas --output json --min-ops 2
+```
+
 ## Common Options
 
 ```bash
