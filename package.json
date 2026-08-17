@@ -1,0 +1,32 @@
+{
+  "name": "mongodb-index-stats-tool",
+  "version": "1.0.0",
+  "description": "MongoDB index statistics tool for AliCloud, Atlas, and self-managed clusters",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "setup": "node setup.js",
+    "examples": "node examples.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "mongodb",
+    "index",
+    "statistics",
+    "alicloud",
+    "atlas",
+    "self-managed",
+    "database",
+    "performance"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "mongodb": "^6.3.0",
+    "cli-table3": "^0.6.3",
+    "chalk": "^4.1.2",
+    "commander": "^11.1.0",
+    "dotenv": "^16.3.1",
+    "ora": "^5.4.1"
+  }
+}

@@ -10,7 +10,8 @@ yarn-error.log*
 .env.production
 
 # Output files
-*.json
+mongodb-index-report-*.json
+mongodb-index-report-*.csv
 *.csv
 reports/
 
